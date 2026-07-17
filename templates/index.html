@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Scriptify - Text to Handwriting</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              fontFamily: { sans: ['Inter', 'sans-serif'] },
+              colors: { primary: '#007AFF' },
+            },
+          },
+        }
+    </script>
+    <style>
+        .paper-texture {
+            background-image: linear-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 100% 2rem;
+        }
+        /* Highlight selected card */
+        input:checked + .style-card {
+            border-color: #007AFF;
+            box-shadow: 0 0 15px rgba(0, 122, 255, 0.3);
+        }
+        .style-radio { position: absolute; opacity: 0; width: 0; height: 0; }
+        .style-card { transition: all 0.2s ease-in-out; border: 3px solid transparent; }
+        .floating-btn {
+            position: fixed; bottom: 2rem; right: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 122, 255, 0.4); z-index: 50;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans min-h-screen pb-32">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-100 px-4 py-8">
+    <div class="max-w-md mx-auto text-center">
+        <div class="mb-2 text-blue-600 inline-block">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 5 5"/><path d="m11 8 2 2"/></svg>
+        </div>
+        
+        <h1 class="text-3xl font-light tracking-tighter text-gray-900">
+            <span class="font-black text-gray-900">Script</span><span class="text-blue-600">ify</span>
+        </h1>
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">Digital Ink Engine</p>
+    </div>
+</header>
+
+    <main class="max-w-md mx-auto px-4 mt-6 space-y-8">
+        <form method="POST" action="/" id="scribe-form">
+            
+            <section>
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">1</span>
+                    Choose your Style
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    {% for font in fonts %}
+                    <label class="relative block cursor-pointer">
+                        <input class="style-radio" name="font_selection" type="radio" value="{{ font.filename }}" {% if loop.first %}checked{% endif %}/>
+                        <div class="style-card bg-white rounded-2xl p-3 shadow-sm">
+                            <img alt="{{ font.name }}" class="w-full h-20 object-cover rounded-lg mb-2" src="{{ url_for('static', filename=font.preview) }}"/>
+                            <p class="text-sm font-medium text-center">{{ font.name }}</p>
+                        </div>
+                    </label>
+                    {% endfor %}
+                    </div>
+            </section>
+
+            <section class="mt-8">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">2</span>
+                    Enter your Text
+                </h2>
+                <div class="relative group">
+                    <div class="absolute inset-0 bg-white rounded-2xl shadow-lg -rotate-1 transform transition group-focus-within:rotate-0"></div>
+                    <textarea name="text_input" class="relative w-full h-64 p-6 bg-white border-none rounded-2xl shadow-sm focus:ring-0 text-gray-700 leading-relaxed paper-texture resize-none" placeholder="Start typing your text here..." required>{{ request.form.text_input }}</textarea>
+                </div>
+            </section>
+
+            <button type="submit" 
+        class="fixed bottom-8 right-8 flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-full font-bold text-lg shadow-2xl shadow-blue-200/50 transition-all duration-300 hover:bg-blue-700 hover:-translate-y-1 hover:shadow-blue-300/60 active:scale-95 z-50">
+    <span>Convert</span>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+    </svg>
+</button>
+        </form>
+
+        {% if result %}
+        <section id="preview-section" class="mt-8">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span class="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs">3</span>
+                Handwritten Preview
+            </h2>
+            <div class="bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+                <img src="{{ url_for('static', filename=result) }}" class="w-full h-auto rounded-lg">
+            </div>
+            <div class="p-6 flex justify-center">
+    <a href="{{ url_for('static', filename=result) }}" download 
+       class="group flex items-center gap-3 px-10 py-4 bg-blue-50 text-blue-700 border border-blue-100 rounded-2xl font-bold text-sm transition-all duration-300 hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-200 hover:-translate-y-0.5 active:scale-95">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Save to Device
+    </a>
+</div>
+        </section>
+        <script>
+            document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth' });
+        </script>
+        {% endif %}
+    </main>
+</body>
+</html>
